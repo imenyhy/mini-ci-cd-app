@@ -13,12 +13,12 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Vérifier syntaxe HTML
+      - name: Check HTML syntax
         run: |
           sudo apt install -y tidy
           tidy -errors -q index.html || true
 
-      - name: Vérifier syntaxe CSS
+      - name: Check CSS syntax
         run: |
           npm install -g stylelint
           stylelint "**/*.css" || true
@@ -28,22 +28,17 @@ jobs:
     needs: validate-code
 
     steps:
-      - name: Checkout repo
+      - name: Checkout code
         uses: actions/checkout@v3
 
-      - name: Configure SSH
+      - name: Add SSH Key
         run: |
           mkdir -p ~/.ssh
           echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
           chmod 600 ~/.ssh/id_ed25519
-          ssh-keyscan -H "${{ secrets.SSH_HOST }}" >> ~/.ssh/known_hosts
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-      - name: Deploy website to VM_Client1
+      - name: Deploy files to VM
         run: |
-          ssh -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }} \
-            "sudo mkdir -p /var/www/html"
-
-          scp -i ~/.ssh/id_ed25519 -o StrictHostKeyChecking=no index.html style.css \
+          scp -i ~/.ssh/id_ed25519 index.html style.css \
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/html/
-
