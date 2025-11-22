@@ -7,29 +7,30 @@ on:
 
 jobs:
 
-  # ------------------------------
-  #  JOB 1 : Validation du code (CI)
-  # ------------------------------
+  # -----------------------------------------
+  #  JOB 1 : VALIDATION DU CODE (CI)
+  # -----------------------------------------
   validate-code:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout du code
         uses: actions/checkout@v3
 
-      - name: Vérifier syntaxe HTML
+      - name: Vérifier HTML
         run: |
           sudo apt update
           sudo apt install -y tidy
           tidy -errors -q index.html || true
 
-      - name: Vérifier syntaxe CSS
+      - name: Vérifier CSS
         run: |
           npm install -g stylelint
           stylelint "**/*.css" || true
 
-  # ------------------------------
-  #  JOB 2 : Déploiement (CD)
-  # ------------------------------
+
+  # -----------------------------------------
+  #  JOB 2 : DÉPLOIEMENT AUTOMATIQUE (CD)
+  # -----------------------------------------
   deploy:
     runs-on: ubuntu-latest
     needs: validate-code
@@ -37,14 +38,15 @@ jobs:
       - name: Checkout du code
         uses: actions/checkout@v3
 
-      - name: Initialiser l'agent SSH
+      - name: Initialiser SSH Agent
         uses: webfactory/ssh-agent@v0.8.0
         with:
           ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
 
-      - name: Copier les fichiers vers le control-node
+      - name: Copier les fichiers vers le Control-Node
         run: |
-          scp -o StrictHostKeyChecking=no -r . ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/ansible/deploy/
+          scp -o StrictHostKeyChecking=no -r . \
+          ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/home/ansible/deploy/
 
       - name: Lancer le playbook Ansible
         run: |
