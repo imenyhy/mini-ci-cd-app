@@ -7,6 +7,7 @@ on:
 
 jobs:
 
+  # --- 1) VALIDATION DU CODE (CI) ---
   validate-code:
     runs-on: ubuntu-latest
     steps:
@@ -23,23 +24,27 @@ jobs:
           npm install -g stylelint
           stylelint "**/*.css" || true
 
+  # --- 2) DEPLOIEMENT (CD) ---
   deploy:
     runs-on: ubuntu-latest
     needs: validate-code
 
     steps:
-
       - name: Checkout code
         uses: actions/checkout@v3
 
+      # Prépare le SSH dans un dossier autorisé sur GitHub Actions
       - name: Prepare SSH
         run: |
-          mkdir -p $HOME/.ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > $HOME/.ssh/id_ed25519
-          chmod 600 $HOME/.ssh/id_ed25519
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> $HOME/.ssh/known_hosts
+          mkdir -p $RUNNER_TEMP/ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > $RUNNER_TEMP/ssh/id_ed25519
+          chmod 600 $RUNNER_TEMP/ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> $RUNNER_TEMP/ssh/known_hosts
 
+      # Déploiement des fichiers sur ta VM
       - name: Deploy files to VM
         run: |
-          scp -i $HOME/.ssh/id_ed25519 index.html style.css \
+          scp -o StrictHostKeyChecking=no \
+            -i $RUNNER_TEMP/ssh/id_ed25519 \
+            index.html style.css \
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/html/
