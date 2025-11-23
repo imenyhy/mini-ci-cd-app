@@ -9,15 +9,13 @@ jobs:
 
   validate-code:
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Check HTML syntax
         run: |
-          sudo apt-get update
-          sudo apt-get install -y tidy
+          sudo apt install -y tidy
           tidy -errors -q index.html || true
 
       - name: Check CSS syntax
@@ -30,23 +28,19 @@ jobs:
     needs: validate-code
 
     steps:
-
       - name: Checkout code
         uses: actions/checkout@v3
 
       - name: Prepare SSH
         run: |
-          mkdir -p $HOME/.ssh
-          chmod 700 $HOME/.ssh
+          mkdir -p ~/.ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
 
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > $HOME/.ssh/id_ed25519
-          chmod 600 $HOME/.ssh/id_ed25519
-
-          ssh-keyscan -H ${{ secrets.SSH_HOST }} >> $HOME/.ssh/known_hosts
-
-      - name: Deploy to VM
+      - name: Deploy files to VM
         run: |
           scp -o StrictHostKeyChecking=no \
-            -i $HOME/.ssh/id_ed25519 \
-            index.html style.css \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/html/
+              -i ~/.ssh/id_ed25519 \
+              index.html style.css \
+              ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/html/
