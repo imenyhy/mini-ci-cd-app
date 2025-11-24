@@ -9,7 +9,6 @@ jobs:
 
   validate-code:
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v3
 
@@ -29,19 +28,22 @@ jobs:
     needs: validate-code
 
     steps:
-
       - uses: actions/checkout@v3
 
       - name: Prepare SSH
-        uses: webfactory/ssh-agent@v0.8.0
-        with:
-          ssh-private-key: ${{ secrets.SSH_PRIVATE_KEY }}
+        run: |
+          mkdir -p $RUNNER_TEMP/ssh
+          echo "${{ secrets.SSH_PRIVATE_KEY }}" > $RUNNER_TEMP/ssh/id_ed25519
+          chmod 600 $RUNNER_TEMP/ssh/id_ed25519
 
-      - name: Add Server Host Key
-        run: ssh-keyscan -H ${{ secrets.SSH_HOST }} >> ~/.ssh/known_hosts
+      - name: Add VM Host Key
+        run: |
+          echo "${{ secrets.SSH_KNOWN_HOST }}" >> $RUNNER_TEMP/ssh/known_hosts
 
       - name: Deploy to VM
         run: |
-          scp index.html style.css \
+          scp -o StrictHostKeyChecking=yes \
+            -i $RUNNER_TEMP/ssh/id_ed25519 \
+            index.html style.css \
             ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/html/
 
