@@ -24,26 +24,12 @@ jobs:
           stylelint "**/*.css" || true
 
   deploy:
-    runs-on: ubuntu-latest
+    runs-on: self-hosted     # <---- TRÈS IMPORTANT
     needs: validate-code
 
     steps:
       - uses: actions/checkout@v3
 
-      - name: Prepare SSH
+      - name: Deploy files locally
         run: |
-          mkdir -p $RUNNER_TEMP/ssh
-          echo "${{ secrets.SSH_PRIVATE_KEY }}" > $RUNNER_TEMP/ssh/id_ed25519
-          chmod 600 $RUNNER_TEMP/ssh/id_ed25519
-
-      - name: Add VM Host Key
-        run: |
-          echo "${{ secrets.SSH_KNOWN_HOST }}" >> $RUNNER_TEMP/ssh/known_hosts
-
-      - name: Deploy to VM
-        run: |
-          scp -o StrictHostKeyChecking=yes \
-            -i $RUNNER_TEMP/ssh/id_ed25519 \
-            index.html style.css \
-            ${{ secrets.SSH_USER }}@${{ secrets.SSH_HOST }}:/var/www/html/
-
+          sudo cp index.html style.css /var/www/html/
